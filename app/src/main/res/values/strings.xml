@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">ExteraNFT</string>
+    <string name="profile_preview_hint">Так ваш профиль видят другие</string>
+    <string name="profile_title">Профиль</string>
+    <string name="edit_button">Изменить</string>
+    <string name="status_online">в сети</string>
+    <string name="username_label">Имя пользователя</string>
+    <string name="also_prefix">также</string>
+    <string name="bio_label">О себе</string>
+    <string name="birthday_label">День рождения</string>
+    <string name="tab_gifts">Подарки</string>
+    <string name="tab_frames">Рамки</string>
+    <string name="tab_market">Маркет</string>
+    <string name="owner_label">Владелец</string>
+    <string name="model_label">Модель</string>
+    <string name="background_label">Фон</string>
+    <string name="pattern_label">Узор</string>
+    <string name="edition_label">Тираж</string>
+    <string name="value_label">Стоимость</string>
+    <string name="upgrade_gift_action">Улучшить подарок</string>
+    <string name="upgraded_label">Улучшено</string>
+    <string name="ok_button">ОК</string>
+    <string name="close_cd">Закрыть</string>
+    <string name="play_pause_cd">Воспроизвести или поставить на паузу</string>
+    <string name="avatar_cd">Аватар профиля</string>
+    <string name="collectible_username_more">Подробнее</string>
+    <string name="collectible_username_copy">Скопировать ссылку</string>
+    <string name="link_copied_toast">Ссылка @crow скопирована</string>
+    <string name="gift_bought_toast">Подарок добавлен в коллекцию!</string>
+    <string name="frame_equipped_toast">Рамка профиля применена</string>
+</resources>

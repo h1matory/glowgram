@@ -1,0 +1,164 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidUserProfile(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 40 &&
+             data.username is string && data.username.size() >= 2 && data.username.size() <= 35 &&
+             (!('bio' in data) || (data.bio is string && data.bio.size() <= 160)) &&
+             (!('birthday' in data) || (data.birthday is string && data.birthday.size() <= 40)) &&
+             data.crystals is int && data.crystals >= 0 && data.crystals <= 1000000 &&
+             data.selectedFrame is string && data.selectedFrame.size() >= 1 && data.selectedFrame.size() <= 32 &&
+             data.chatBackdrop is string && data.chatBackdrop.size() >= 1 && data.chatBackdrop.size() <= 32 &&
+             data.chatPattern is string && data.chatPattern.size() >= 1 && data.chatPattern.size() <= 32 &&
+             data.chatAccent is string && data.chatAccent.size() >= 1 && data.chatAccent.size() <= 32;
+    }
+
+    function isValidOwnedGift(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.fragmentSlug is string && data.fragmentSlug.size() >= 2 && data.fragmentSlug.size() <= 64 &&
+             data.number is int && data.number >= 1 && data.number <= 1000000 &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 60 &&
+             data.modelName is string && data.modelName.size() >= 1 && data.modelName.size() <= 60 &&
+             (!('modelRarityPercent' in data) || (data.modelRarityPercent is string && data.modelRarityPercent.size() <= 16)) &&
+             (!('backgroundName' in data) || (data.backgroundName is string && data.backgroundName.size() <= 40)) &&
+             (!('backgroundRarityPercent' in data) || (data.backgroundRarityPercent is string && data.backgroundRarityPercent.size() <= 16)) &&
+             (!('patternName' in data) || (data.patternName is string && data.patternName.size() <= 40)) &&
+             (!('patternRarityPercent' in data) || (data.patternRarityPercent is string && data.patternRarityPercent.size() <= 16)) &&
+             (!('editionText' in data) || (data.editionText is string && data.editionText.size() <= 40)) &&
+             data.owner is string && data.owner.size() >= 1 && data.owner.size() <= 40 &&
+             data.priceRub is int && data.priceRub >= 0 && data.priceRub <= 10000000 &&
+             data.priceCrystals is int && data.priceCrystals >= 0 && data.priceCrystals <= 1000000 &&
+             data.upgraded is bool;
+    }
+
+    function isValidChatThread(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 60 &&
+             data.subtitle is string && data.subtitle.size() >= 1 && data.subtitle.size() <= 60 &&
+             data.avatarText is string && data.avatarText.size() >= 1 && data.avatarText.size() <= 4 &&
+             data.lastMessage is string && data.lastMessage.size() <= 500 &&
+             data.pinned is bool;
+    }
+
+    function isValidChatMessage(data, chatId) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.chatId is string && data.chatId == chatId &&
+             data.senderName is string && data.senderName.size() >= 1 && data.senderName.size() <= 60 &&
+             data.text is string && data.text.size() >= 1 && data.text.size() <= 1000 &&
+             data.outgoing is bool &&
+             (!('giftSlug' in data) || (data.giftSlug is string && data.giftSlug.size() <= 64)) &&
+             (!('giftTitle' in data) || (data.giftTitle is string && data.giftTitle.size() <= 80));
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if isOwner(userId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       incoming().keys().hasAll(['userId', 'displayName', 'username', 'crystals', 'selectedFrame', 'chatBackdrop', 'chatPattern', 'chatAccent', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'displayName', 'username', 'bio', 'birthday', 'crystals', 'selectedFrame', 'chatBackdrop', 'chatPattern', 'chatAccent', 'createdAt', 'updatedAt']) &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       isValidUserProfile(incoming());
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidUserProfile(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'username', 'bio', 'birthday', 'crystals', 'selectedFrame', 'chatBackdrop', 'chatPattern', 'chatAccent', 'updatedAt']);
+
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      match /gifts/{giftId} {
+        allow get: if isOwner(userId) && isValidId(giftId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(giftId) &&
+                         incoming().keys().hasAll(['userId', 'fragmentSlug', 'number', 'name', 'modelName', 'owner', 'priceRub', 'priceCrystals', 'upgraded', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'fragmentSlug', 'number', 'name', 'modelName', 'modelRarityPercent', 'backgroundName', 'backgroundRarityPercent', 'patternName', 'patternRarityPercent', 'editionText', 'owner', 'priceRub', 'priceCrystals', 'upgraded', 'createdAt', 'updatedAt']) &&
+                         incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         isValidOwnedGift(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(giftId) &&
+                         isValidOwnedGift(incoming()) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['modelName', 'priceRub', 'upgraded', 'updatedAt']);
+
+        allow delete: if isOwner(userId) && isValidId(giftId);
+      }
+
+      match /chats/{chatId} {
+        allow get: if isOwner(userId) && isValidId(chatId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(chatId) &&
+                         incoming().keys().hasAll(['userId', 'title', 'subtitle', 'avatarText', 'lastMessage', 'pinned', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'title', 'subtitle', 'avatarText', 'lastMessage', 'pinned', 'createdAt', 'updatedAt']) &&
+                         incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         isValidChatThread(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(chatId) &&
+                         isValidChatThread(incoming()) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['title', 'subtitle', 'lastMessage', 'pinned', 'updatedAt']);
+
+        allow delete: if isOwner(userId) && isValidId(chatId);
+
+        match /messages/{messageId} {
+          allow get: if isOwner(userId) && isValidId(chatId) && isValidId(messageId);
+          allow list: if isOwner(userId) && isValidId(chatId);
+
+          allow create: if isOwner(userId) &&
+                           isValidId(chatId) &&
+                           isValidId(messageId) &&
+                           incoming().keys().hasAll(['userId', 'chatId', 'senderName', 'text', 'outgoing', 'createdAt']) &&
+                           incoming().keys().hasOnly(['userId', 'chatId', 'senderName', 'text', 'outgoing', 'giftSlug', 'giftTitle', 'createdAt']) &&
+                           incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                           isValidChatMessage(incoming(), chatId);
+
+          allow update: if false;
+          allow delete: if isOwner(userId) && isValidId(chatId) && isValidId(messageId);
+        }
+      }
+    }
+  }
+}

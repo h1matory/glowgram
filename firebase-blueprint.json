@@ -1,0 +1,99 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated user profile, avatar frame, crystal balance, and chat appearance settings.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID of the owner." },
+        "displayName": { "type": "string", "description": "Public display name." },
+        "username": { "type": "string", "description": "Handle starting with @." },
+        "bio": { "type": "string", "description": "Profile bio text." },
+        "birthday": { "type": "string", "description": "Formatted birthday string." },
+        "crystals": { "type": "integer", "description": "Current crystal balance." },
+        "selectedFrame": { "type": "string", "description": "Selected animated avatar frame enum name." },
+        "chatBackdrop": { "type": "string", "description": "Selected chat wallpaper backdrop enum name." },
+        "chatPattern": { "type": "string", "description": "Selected chat wallpaper pattern enum name." },
+        "chatAccent": { "type": "string", "description": "Selected chat accent color enum name." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp on creation." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp on update." }
+      },
+      "required": ["userId", "displayName", "username", "crystals", "selectedFrame", "chatBackdrop", "chatPattern", "chatAccent", "createdAt", "updatedAt"]
+    },
+    "OwnedGift": {
+      "title": "OwnedGift",
+      "description": "NFT collectible gift owned by the user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "fragmentSlug": { "type": "string" },
+        "number": { "type": "integer" },
+        "name": { "type": "string" },
+        "modelName": { "type": "string" },
+        "modelRarityPercent": { "type": "string" },
+        "backgroundName": { "type": "string" },
+        "backgroundRarityPercent": { "type": "string" },
+        "patternName": { "type": "string" },
+        "patternRarityPercent": { "type": "string" },
+        "editionText": { "type": "string" },
+        "owner": { "type": "string" },
+        "priceRub": { "type": "integer" },
+        "priceCrystals": { "type": "integer" },
+        "upgraded": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "fragmentSlug", "number", "name", "modelName", "owner", "priceRub", "priceCrystals", "upgraded", "createdAt", "updatedAt"]
+    },
+    "ChatThread": {
+      "title": "ChatThread",
+      "description": "Messenger conversation item belonging to the user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "subtitle": { "type": "string" },
+        "avatarText": { "type": "string" },
+        "lastMessage": { "type": "string" },
+        "pinned": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "subtitle", "avatarText", "lastMessage", "pinned", "createdAt", "updatedAt"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "Single message inside a chat thread.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "chatId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "text": { "type": "string" },
+        "outgoing": { "type": "boolean" },
+        "giftSlug": { "type": "string" },
+        "giftTitle": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "chatId", "senderName", "text", "outgoing", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User profile document keyed by Firebase Auth UID."
+    },
+    "/users/{userId}/gifts/{giftId}": {
+      "schema": { "$ref": "#/entities/OwnedGift" },
+      "description": "User's owned Telegram Market NFT gifts."
+    },
+    "/users/{userId}/chats/{chatId}": {
+      "schema": { "$ref": "#/entities/ChatThread" },
+      "description": "User's chat threads."
+    },
+    "/users/{userId}/chats/{chatId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/ChatMessage" },
+      "description": "Messages inside a user's chat thread."
+    }
+  }
+}

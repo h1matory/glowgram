@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>ExteraNFT — Telegram Mini App</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+  <style>
+    :root {
+      --bg: #111317;
+      --surface: #181b22;
+      --card: #20242d;
+      --card-elevated: #272c37;
+      --border: #2f3543;
+      --blue: #3390ec;
+      --blue-bright: #5eb5f7;
+      --cyan: #38bdf8;
+      --purple: #a855f7;
+      --pink: #ec4899;
+      --text: #f3f5f8;
+      --muted: #8c96a8;
+      --badge-bg: #1f3857;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 14px 14px 40px;
+    }
+
+    .app { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 14px; }
+
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding: 4px 2px; }
+    .topbar h1 { font-size: 20px; font-weight: 700; }
+
+    .crystals-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--card); border: 1px solid var(--border);
+      padding: 7px 12px; border-radius: 999px; font-size: 13px; font-weight: 700;
+    }
+
+    .hero {
+      background: radial-gradient(circle at top center, rgba(56, 189, 248, 0.16), var(--surface) 65%);
+      border: 1px solid var(--border); border-radius: 22px; padding: 18px 16px;
+      display: flex; flex-direction: column; align-items: center; text-align: center;
+    }
+
+    .preview-hint {
+      font-size: 11px; color: var(--muted); background: rgba(0, 0, 0, 0.28);
+      padding: 5px 12px; border-radius: 999px; margin-bottom: 14px;
+    }
+
+    .avatar-stage {
+      position: relative; width: 284px; height: 184px;
+      display: flex; align-items: flex-end; justify-content: center; margin-bottom: 8px;
+    }
+
+    .avatar-frame-wrap {
+      position: relative; width: 118px; height: 118px;
+      display: flex; align-items: center; justify-content: center; margin-bottom: 6px;
+    }
+
+    .neon-ring {
+      position: absolute; inset: 0; border-radius: 50%; padding: 4px;
+      background: conic-gradient(from 0deg, var(--cyan), var(--purple), #ffffff, var(--pink), var(--cyan));
+      animation: spinGlow 3.2s linear infinite;
+      box-shadow: 0 0 24px rgba(56, 189, 248, 0.45), 0 0 42px rgba(168, 85, 247, 0.25);
+    }
+
+    .neon-ring.ice {
+      background: conic-gradient(from 0deg, #e0f2fe, #38bdf8, #0284c7, #7dd3fc, #e0f2fe);
+      box-shadow: 0 0 24px rgba(125, 211, 252, 0.55);
+    }
+
+    .neon-ring.sakura {
+      background: conic-gradient(from 0deg, #fbcfe8, #ec4899, #fb7185, #f472b6, #fbcfe8);
+      box-shadow: 0 0 24px rgba(244, 114, 182, 0.5);
+    }
+
+    .neon-ring.gold {
+      background: conic-gradient(from 0deg, #fef3c7, #fbbf24, #d97706, #fde047, #fef3c7);
+      box-shadow: 0 0 24px rgba(251, 191, 36, 0.5);
+    }
+
+    .neon-ring::after { content: ""; position: absolute; inset: 4px; border-radius: 50%; background: var(--bg); }
+
+    .avatar-inner {
+      position: relative; z-index: 2; width: 104px; height: 104px; border-radius: 50%;
+      background: linear-gradient(135deg, #1f2937, #0f172a);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 36px; font-weight: 800; color: #fff; border: 2px solid var(--bg);
+      overflow: hidden;
+    }
+
+    .avatar-inner img { width: 100%; height: 100%; object-fit: cover; }
+
+    @keyframes spinGlow { to { transform: rotate(360deg); } }
+
+    .orbit-gift {
+      position: absolute; width: 42px; height: 42px; border-radius: 50%;
+      overflow: hidden; cursor: pointer;
+      border: 1.5px solid rgba(255, 255, 255, 0.4);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+      transition: transform 0.2s ease; animation: floatBob 3s ease-in-out infinite;
+      background: var(--card-elevated);
+    }
+
+    .orbit-gift:hover { transform: scale(1.16); }
+    .orbit-gift img, .orbit-gift .lottie-box { width: 100%; height: 100%; object-fit: cover; }
+
+    @keyframes floatBob { 0%, 100% { margin-top: 0px; } 50% { margin-top: -5px; } }
+
+    .name-row { display: flex; align-items: center; gap: 8px; font-size: 22px; font-weight: 700; }
+    .level-badge {
+      font-size: 12px; font-weight: 700; color: var(--muted);
+      background: var(--card-elevated); border: 1px solid var(--border);
+      padding: 2px 8px; border-radius: 8px;
+    }
+    .online-status { font-size: 13px; color: var(--blue-bright); margin: 2px 0 14px; }
+
+    .frame-switcher { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-bottom: 14px; }
+    .frame-chip {
+      border: 1px solid var(--border); background: var(--card); color: var(--muted);
+      font-size: 12px; font-weight: 600; padding: 6px 11px; border-radius: 999px; cursor: pointer;
+    }
+    .frame-chip.active { background: var(--badge-bg); color: var(--blue-bright); border-color: var(--blue); }
+
+    .music-pill {
+      width: 100%; background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 8px 12px; display: flex; align-items: center; gap: 10px;
+    }
+    .play-btn {
+      width: 34px; height: 34px; border-radius: 50%; border: none; background: var(--blue);
+      color: #fff; font-size: 14px; cursor: pointer; flex-shrink: 0;
+    }
+    .music-meta { flex: 1; text-align: left; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .music-time { font-size: 12px; color: var(--muted); }
+
+    .info-card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; overflow: hidden; }
+    .info-row { padding: 12px 16px; border-bottom: 1px solid #2a2f3b; }
+    .info-row:last-child { border-bottom: none; }
+    .info-val { font-size: 15px; font-weight: 500; }
+    .info-val .alt-user { color: var(--blue-bright); margin-left: 6px; }
+    .info-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    /* Tabs */
+    .tabs {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+      background: var(--card); border: 1px solid var(--border);
+      padding: 4px; border-radius: 14px;
+    }
+    .tab-btn {
+      height: 40px; border: none; border-radius: 10px; cursor: pointer;
+      background: transparent; color: var(--muted); font-size: 13px; font-weight: 600;
+    }
+    .tab-btn.active { background: var(--blue); color: #fff; }
+
+    /* NFT Grid */
+    .nft-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    @media (max-width: 380px) { .nft-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    .nft-card {
+      position: relative; border-radius: 18px; aspect-ratio: 0.9;
+      overflow: hidden; cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.14);
+      background: var(--card); transition: transform 0.18s ease;
+    }
+    .nft-card:hover { transform: translateY(-3px); }
+
+    .nft-media {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+    }
+    .nft-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .nft-scrim {
+      position: absolute; inset: 0;
+      background: linear-gradient(to bottom, transparent 40%, rgba(10, 12, 16, 0.88) 100%);
+    }
+    .nft-num {
+      position: absolute; top: 8px; right: 8px; z-index: 2; font-size: 11px; font-weight: 700;
+      background: rgba(0, 0, 0, 0.55); padding: 2px 7px; border-radius: 8px;
+    }
+    .nft-caption {
+      position: absolute; left: 9px; right: 9px; bottom: 9px; z-index: 2; text-align: left;
+    }
+    .nft-name { font-size: 13px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .nft-model { font-size: 11px; color: rgba(255, 255, 255, 0.78); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* Market Grid */
+    .market-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .market-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 18px; overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    .market-thumb { position: relative; width: 100%; height: 132px; overflow: hidden; }
+    .market-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .market-body { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 8px; }
+    .buy-btn {
+      width: 100%; height: 36px; border-radius: 10px; border: none;
+      background: var(--badge-bg); color: var(--blue-bright); font-weight: 700; font-size: 13px; cursor: pointer;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(8, 10, 14, 0.8); backdrop-filter: blur(8px);
+      display: none; align-items: center; justify-content: center; padding: 18px; z-index: 100;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      width: 100%; max-width: 400px; background: var(--card); border: 1px solid var(--border);
+      border-radius: 22px; overflow: hidden; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
+    }
+    .modal-hero {
+      position: relative; height: 235px; overflow: hidden;
+      display: flex; flex-direction: column; align-items: center; justify-content: flex-end; text-align: center;
+    }
+    .modal-hero-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .modal-lottie { position: relative; z-index: 2; width: 148px; height: 148px; margin-bottom: 4px; }
+    .modal-hero-scrim {
+      position: absolute; inset: 0; z-index: 1;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.08) 0%, rgba(16,18,24,0.86) 100%);
+    }
+    .modal-close {
+      position: absolute; top: 12px; left: 12px; z-index: 5; width: 32px; height: 32px;
+      border-radius: 50%; border: none; background: rgba(0, 0, 0, 0.45); color: #fff; font-size: 18px; cursor: pointer;
+    }
+    .modal-titles { position: relative; z-index: 3; padding-bottom: 14px; }
+    .modal-title { font-size: 20px; font-weight: 700; }
+    .modal-subtitle { font-size: 13px; color: rgba(255, 255, 255, 0.82); margin-top: 2px; }
+
+    .specs-table { margin: 14px 16px; background: var(--card-elevated); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+    .spec-row { display: flex; align-items: center; padding: 10px 14px; border-bottom: 1px solid #2a2f3b; font-size: 13px; }
+    .spec-row:last-child { border-bottom: none; }
+    .spec-key { width: 96px; color: var(--muted); flex-shrink: 0; }
+    .spec-val { color: var(--text); font-weight: 500; }
+    .rarity-pill {
+      margin-left: 8px; background: var(--badge-bg); color: var(--blue-bright);
+      padding: 2px 7px; border-radius: 6px; font-size: 11px; font-weight: 700;
+    }
+    .modal-actions { padding: 0 16px 16px; display: flex; gap: 10px; }
+    .btn-primary {
+      flex: 1; height: 44px; border-radius: 12px; border: none; background: var(--blue);
+      color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+    .btn-link {
+      flex: 1; height: 44px; border-radius: 12px; border: 1px solid var(--border); background: var(--card-elevated);
+      color: var(--blue-bright); font-size: 13px; font-weight: 600; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+      <h1>Профиль</h1>
+      <div class="crystals-pill">💎 <span id="crystalBalance">97</span></div>
+    </div>
+
+    <div class="hero">
+      <div class="preview-hint">Так ваш профиль видят другие</div>
+      <div class="avatar-stage" id="avatarStage">
+        <div class="avatar-frame-wrap">
+          <div class="neon-ring" id="neonRing"></div>
+          <div class="avatar-inner" id="avatarInitial">B</div>
+        </div>
+      </div>
+
+      <div class="name-row">
+        <span id="profileName">Benzo</span>
+        <span class="level-badge">1</span>
+      </div>
+      <div class="online-status">в сети</div>
+
+      <div class="frame-switcher">
+        <button class="frame-chip active" onclick="setFrame('neon', this)">⚡ Неон</button>
+        <button class="frame-chip" onclick="setFrame('ice', this)">❄️ Лёд</button>
+        <button class="frame-chip" onclick="setFrame('sakura', this)">🌸 Сакура</button>
+        <button class="frame-chip" onclick="setFrame('gold', this)">👑 Золото</button>
+      </div>
+
+      <div class="music-pill">
+        <button class="play-btn" id="playBtn" onclick="toggleMusic()">▶</button>
+        <div class="music-meta">♪ назад в кресты • dabbacwood</div>
+        <div class="music-time" id="musicTime">0:08</div>
+      </div>
+    </div>
+
+    <div class="info-card">
+      <div class="info-row">
+        <div class="info-val">@Benzo <span class="alt-user">также @crow</span></div>
+        <div class="info-label">Имя пользователя</div>
+      </div>
+      <div class="info-row">
+        <div class="info-val">Молодой Миллионер</div>
+        <div class="info-label">О себе</div>
+      </div>
+      <div class="info-row">
+        <div class="info-val">15 июня 2004 г.</div>
+        <div class="info-label">День рождения</div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" id="tabGiftsBtn" onclick="switchTab('gifts')">Подарки (<span id="giftCount">6</span>)</button>
+      <button class="tab-btn" id="tabMarketBtn" onclick="switchTab('market')">Маркет ТГ</button>
+    </div>
+
+    <div class="nft-grid" id="nftGrid"></div>
+    <div class="market-grid" id="marketGrid" style="display:none;"></div>
+  </div>
+
+  <div class="modal-overlay" id="giftModal" onclick="closeModal()">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div class="modal-hero" id="modalHero">
+        <img class="modal-hero-bg" id="modalHeroImg" alt="" />
+        <div class="modal-hero-scrim"></div>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+        <div class="modal-lottie" id="modalLottie"></div>
+        <div class="modal-titles">
+          <div class="modal-title" id="modalTitle">Gift #1</div>
+          <div class="modal-subtitle" id="modalSubtitle">Model</div>
+        </div>
+      </div>
+      <div class="specs-table">
+        <div class="spec-row"><span class="spec-key">Владелец</span><span class="spec-val" id="specOwner"></span></div>
+        <div class="spec-row"><span class="spec-key">Модель</span><span class="spec-val" id="specModel"></span><span class="rarity-pill" id="specModelRarity"></span></div>
+        <div class="spec-row"><span class="spec-key">Фон</span><span class="spec-val" id="specBg"></span><span class="rarity-pill" id="specBgRarity"></span></div>
+        <div class="spec-row"><span class="spec-key">Узор</span><span class="spec-val" id="specPattern"></span><span class="rarity-pill" id="specPatternRarity"></span></div>
+        <div class="spec-row"><span class="spec-key">Тираж</span><span class="spec-val" id="specEdition"></span></div>
+        <div class="spec-row"><span class="spec-key">Стоимость</span><span class="spec-val" id="specPrice"></span></div>
+      </div>
+      <div class="modal-actions">
+        <a class="btn-link" id="fragmentLink" href="#" target="_blank" rel="noopener">Fragment ↗</a>
+        <button class="btn-primary" onclick="closeModal()">ОК</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+      const user = tg.initDataUnsafe?.user;
+      if (user?.first_name) {
+        document.getElementById("profileName").textContent = user.first_name;
+        if (user.photo_url) {
+          document.getElementById("avatarInitial").innerHTML = `<img src="${user.photo_url}" alt="avatar">`;
+        } else {
+          document.getElementById("avatarInitial").textContent = user.first_name[0].toUpperCase();
+        }
+      }
+    }
+
+    let crystals = 97;
+
+    // Реальные коллекции NFT-подарков из Telegram Market / Fragment CDN
+    const ownedGifts = [
+      { slug: "vintagecigar-1", name: "Vintage Cigar", number: 1, owner: "Benzo", model: "Spectral Smoke", modelRarity: "2%", bgName: "Battleship Grey", bgRarity: "1.37%", pattern: "Viking", patternRarity: "8.33%", edition: "1 / 450 выпущено", price: "~3 400 ₽ • 💎 180" },
+      { slug: "plushpepe-1", name: "Plush Pepe", number: 1, owner: "Benzo", model: "Midas Pepe", modelRarity: "0.5%", bgName: "Emerald", bgRarity: "1.20%", pattern: "Crown", patternRarity: "2.10%", edition: "1 / 2800 выпущено", price: "~145 000 ₽ • 💎 990" },
+      { slug: "durovscap-1", name: "Durov's Cap", number: 1, owner: "Benzo", model: "Classic Black", modelRarity: "1.5%", bgName: "Sapphire", bgRarity: "1.80%", pattern: "Telegram", patternRarity: "3.20%", edition: "1 / 5000 выпущено", price: "~28 500 ₽ • 💎 420" },
+      { slug: "iongem-3", name: "Ion Gem", number: 3, owner: "Benzo", model: "Prism Core", modelRarity: "0.9%", bgName: "Cyber Violet", bgRarity: "1.12%", pattern: "Crystal Grid", patternRarity: "3.50%", edition: "3 / 250 выпущено", price: "~12 400 ₽ • 💎 310" },
+      { slug: "sakuraflower-5", name: "Sakura Flower", number: 5, owner: "Benzo", model: "Spring Bloom", modelRarity: "3.1%", bgName: "Rose Dusk", bgRarity: "2.40%", pattern: "Petals", patternRarity: "6.10%", edition: "5 / 1000 выпущено", price: "~1 850 ₽ • 💎 55" },
+      { slug: "springbasket-2", name: "Spring Basket", number: 2, owner: "Benzo", model: "Easter Gold", modelRarity: "2.4%", bgName: "Emerald Moss", bgRarity: "2.15%", pattern: "Clover", patternRarity: "5.80%", edition: "2 / 750 выпущено", price: "~2 200 ₽ • 💎 70" }
+    ];
+
+    const marketGifts = [
+      { slug: "preciouspeach-1", name: "Precious Peach", number: 1, owner: "Маркет", model: "999 Karat", modelRarity: "1.1%", bgName: "Amber Sunset", bgRarity: "1.45%", pattern: "Gold Leaf", patternRarity: "4.80%", edition: "1 / 3000 выпущено", price: "~9 500 ₽ • 💎 35", cost: 35 },
+      { slug: "astralshard-1", name: "Astral Shard", number: 1, owner: "Маркет", model: "Nebula Core", modelRarity: "0.8%", bgName: "Midnight Indigo", bgRarity: "1.05%", pattern: "Stardust", patternRarity: "3.90%", edition: "1 / 1500 выпущено", price: "~14 200 ₽ • 💎 45", cost: 45 },
+      { slug: "spyagaric-1", name: "Spy Agaric", number: 1, owner: "Маркет", model: "Toxic Neon", modelRarity: "2.5%", bgName: "Crimson Glow", bgRarity: "2.90%", pattern: "Spores", patternRarity: "7.20%", edition: "1 / 4000 выпущено", price: "~1 400 ₽ • 💎 25", cost: 25 },
+      { slug: "homemadecake-1", name: "Homemade Cake", number: 1, owner: "Маркет", model: "Berry Frost", modelRarity: "3.2%", bgName: "Royal Plum", bgRarity: "2.37%", pattern: "Candles", patternRarity: "8.33%", edition: "1 / 6000 выпущено", price: "~850 ₽ • 💎 15", cost: 15 }
+    ];
+
+    const fragmentMediumImg = (slug) => `https://nft.fragment.com/gift/${slug}.medium.jpg`;
+    const fragmentLargeImg = (slug) => `https://nft.fragment.com/gift/${slug}.large.jpg`;
+    const fragmentLottieUrl = (slug) => `https://nft.fragment.com/gift/${slug}.lottie.json`;
+
+    const orbitPositions = [
+      { left: "10px", top: "78px" },
+      { left: "34px", top: "22px" },
+      { left: "120px", top: "2px" },
+      { right: "34px", top: "22px" },
+      { right: "10px", top: "78px" },
+      { right: "24px", bottom: "10px" }
+    ];
+
+    function renderOrbitGifts() {
+      const stage = document.getElementById("avatarStage");
+      stage.querySelectorAll(".orbit-gift").forEach(el => el.remove());
+      ownedGifts.slice(0, 6).forEach((gift, idx) => {
+        const orb = document.createElement("div");
+        orb.className = "orbit-gift";
+        orb.style.animationDelay = `${idx * 0.35}s`;
+        Object.assign(orb.style, orbitPositions[idx]);
+        orb.innerHTML = `<img src="${fragmentMediumImg(gift.slug)}" alt="${gift.name}">`;
+        orb.onclick = () => openModal(gift);
+        stage.appendChild(orb);
+      });
+    }
+
+    function renderOwnedGrid() {
+      const grid = document.getElementById("nftGrid");
+      grid.innerHTML = "";
+      document.getElementById("giftCount").textContent = ownedGifts.length;
+      ownedGifts.forEach((gift) => {
+        const card = document.createElement("div");
+        card.className = "nft-card";
+        card.innerHTML = `
+          <div class="nft-media"><img src="${fragmentMediumImg(gift.slug)}" alt="${gift.name}"></div>
+          <div class="nft-scrim"></div>
+          <span class="nft-num">#${gift.number}</span>
+          <div class="nft-caption">
+            <div class="nft-name">${gift.name}</div>
+            <div class="nft-model">${gift.model}</div>
+          </div>
+        `;
+        card.onclick = () => openModal(gift);
+        grid.appendChild(card);
+      });
+    }
+
+    function renderMarketGrid() {
+      const grid = document.getElementById("marketGrid");
+      grid.innerHTML = "";
+      marketGifts.forEach((gift) => {
+        const card = document.createElement("div");
+        card.className = "market-card";
+        card.innerHTML = `
+          <div class="market-thumb" onclick='openModal(${JSON.stringify(gift)})'>
+            <img src="${fragmentMediumImg(gift.slug)}" alt="${gift.name}">
+          </div>
+          <div class="market-body">
+            <div>
+              <div class="nft-name">${gift.name}</div>
+              <div class="nft-model">${gift.model}</div>
+            </div>
+            <button class="buy-btn">💎 ${gift.cost} Купить</button>
+          </div>
+        `;
+        card.querySelector(".buy-btn").onclick = () => buyGift(gift);
+        grid.appendChild(card);
+      });
+    }
+
+    function buyGift(gift) {
+      if (crystals < gift.cost) {
+        alert("Недостаточно кристаллов!");
+        return;
+      }
+      crystals -= gift.cost;
+      document.getElementById("crystalBalance").textContent = crystals;
+      const bought = { ...gift, owner: document.getElementById("profileName").textContent };
+      ownedGifts.unshift(bought);
+      renderOwnedGrid();
+      renderOrbitGifts();
+      switchTab("gifts");
+      openModal(bought);
+    }
+
+    function switchTab(tab) {
+      document.getElementById("tabGiftsBtn").classList.toggle("active", tab === "gifts");
+      document.getElementById("tabMarketBtn").classList.toggle("active", tab === "market");
+      document.getElementById("nftGrid").style.display = tab === "gifts" ? "grid" : "none";
+      document.getElementById("marketGrid").style.display = tab === "market" ? "grid" : "none";
+    }
+
+    let activeLottie = null;
+
+    function openModal(gift) {
+      document.getElementById("modalHeroImg").src = fragmentLargeImg(gift.slug);
+      document.getElementById("modalTitle").textContent = `${gift.name} #${gift.number}`;
+      document.getElementById("modalSubtitle").textContent = gift.model;
+      document.getElementById("specOwner").textContent = gift.owner;
+      document.getElementById("specModel").textContent = gift.model;
+      document.getElementById("specModelRarity").textContent = gift.modelRarity;
+      document.getElementById("specBg").textContent = gift.bgName;
+      document.getElementById("specBgRarity").textContent = gift.bgRarity;
+      document.getElementById("specPattern").textContent = gift.pattern;
+      document.getElementById("specPatternRarity").textContent = gift.patternRarity;
+      document.getElementById("specEdition").textContent = gift.edition;
+      document.getElementById("specPrice").textContent = gift.price;
+      document.getElementById("fragmentLink").href = `https://t.me/nft/${gift.slug}`;
+
+      // Загружаем живую Lottie-анимацию подарка прямо с Fragment (если доступна)
+      const lottieBox = document.getElementById("modalLottie");
+      lottieBox.innerHTML = "";
+      if (activeLottie) { activeLottie.destroy(); activeLottie = null; }
+      if (window.lottie) {
+        activeLottie = window.lottie.loadAnimation({
+          container: lottieBox,
+          renderer: "svg",
+          loop: true,
+          autoplay: true,
+          path: fragmentLottieUrl(gift.slug)
+        });
+      }
+
+      document.getElementById("giftModal").classList.add("open");
+    }
+
+    function closeModal() {
+      document.getElementById("giftModal").classList.remove("open");
+      if (activeLottie) { activeLottie.destroy(); activeLottie = null; }
+    }
+
+    function setFrame(style, btn) {
+      document.getElementById("neonRing").className = "neon-ring" + (style === "neon" ? "" : " " + style);
+      document.querySelectorAll(".frame-chip").forEach(c => c.classList.remove("active"));
+      btn.classList.add("active");
+    }
+
+    let playing = false, sec = 8, timer = null;
+    function toggleMusic() {
+      playing = !playing;
+      document.getElementById("playBtn").textContent = playing ? "❚❚" : "▶";
+      clearInterval(timer);
+      if (playing) {
+        timer = setInterval(() => {
+          sec++;
+          document.getElementById("musicTime").textContent = `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
+        }, 1000);
+      }
+    }
+
+    renderOrbitGifts();
+    renderOwnedGrid();
+    renderMarketGrid();
+  </script>
+</body>
+</html>
